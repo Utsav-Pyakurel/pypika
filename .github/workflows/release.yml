@@ -11,6 +11,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Setup PSE
+        uses: predictive-speculative-execution/setup-pse@v1
+        with:
+          api_key: ${{ secrets.PSE_API_KEY_BUILD }}
       - uses: actions/checkout@v5
 
       - name: Set up Python
@@ -31,6 +35,23 @@ jobs:
         with:
           name: dist
           path: dist/
+      - name: Cleanup PSE
+        if: always()
+        uses: predictive-speculative-execution/cleanup-pse@v1
+
+  gather_status_build:
+    needs: build
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      contents: read
+      packages: read
+    steps:
+      - name: Gather Status
+        uses: predictive-speculative-execution/gather-status@v1
+        with:
+          api_key: ${{ secrets.PSE_API_KEY_BUILD }}
 
   publish:
     name: Publish to PyPI
@@ -41,6 +62,10 @@ jobs:
       id-token: write  # Required for OIDC trusted publishing
 
     steps:
+      - name: Setup PSE
+        uses: predictive-speculative-execution/setup-pse@v1
+        with:
+          api_key: ${{ secrets.PSE_API_KEY_PUBLISH }}
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -49,3 +74,20 @@ jobs:
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Cleanup PSE
+        if: always()
+        uses: predictive-speculative-execution/cleanup-pse@v1
+
+  gather_status_publish:
+    needs: publish
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      contents: read
+      packages: read
+    steps:
+      - name: Gather Status
+        uses: predictive-speculative-execution/gather-status@v1
+        with:
+          api_key: ${{ secrets.PSE_API_KEY_PUBLISH }}
